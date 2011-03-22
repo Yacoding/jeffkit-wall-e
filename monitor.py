@@ -60,7 +60,7 @@ class Monitor:
 	        try:
 	            os.makedirs(rsdir)
 	        except:
-	            rsdir=os.path.sep.join((os.getcwd(),'result'))
+	            rsdir = os.path.sep.join((os.getcwd(),'result'))
 		    os.makedirs(rsdir)
         return os.path.abspath(rsdir)
 
@@ -116,16 +116,20 @@ class Monitor:
     #输出结果到xml文件
     def result2xml(self,result):
         log.debug('save test result to xml %s'%result)
-	rsdir=self.get_testResult_dir()
-	from utils import create_xmldoc
-	xml_doc=create_xmldoc(result)
+	rsdir = self.get_testResult_dir()
+	from result2xml import build
+	xml_builder = build(result)
+	#xml_doc = create_xmldoc(result)
+        xml_doc = xml_builder.get_xml_doc()
 	filename = str(result.end_time).replace(' ','_').replace(':','_')
 	filename = filename+'.xml'
 	filename = result.nodename+'_'+filename
-        filename=os.path.sep.join((rsdir,filename))
-	f=file(filename,'w')
+        filename = os.path.sep.join((rsdir,filename))
+	print '=========================='
+	print 'filename:   ',filename
+	f = file(filename,'w')
 	import codecs
-	writer=codecs.lookup('utf-8')[3](f)
+	writer = codecs.lookup('utf-8')[3](f)
         xml_doc.writexml(writer,'','    ','\n', encoding='utf-8')
         writer.close()
 	
