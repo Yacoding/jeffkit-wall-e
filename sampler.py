@@ -123,9 +123,9 @@ class HTTPSampler(object):
             result.responseHeaders = self._parent._context[self.id+'.responseHeaders'] = self._context['responseHeaders'] = response.info()
         except:
             result.status = "ERROR"
-	    result.code=503
+	    result.code = 503
             result.exc_info = log_exce('something wrong')
-	result.httpHeader=opener.addheaders
+	result.httpHeader = opener.addheaders
         return result
 
 register('http',HTTPSampler)
@@ -134,72 +134,79 @@ class SOAPSampler(object):
 
     def is_valid(self):
         pass
+
     #校验并构造soap所需要的参数
-    def translate_arg(self,arg,name,o=None,sign=None,k='',l=[]):
-        b=True
-        if arg.__class__ is not dict:
-            return False
+    def setObj(self,kw,item,name,o=None,sign=None,k='',l=[]):
+	if item.attributes.has_key('name') and item.attributes.has_key('type') and kw.has_key(item.attributes['name']):
+	    if item.attributes['type'][0] == self.namespace: 
+                k += item.attributes['name']+'.'
+                obj = argObj()
+                d = kw[item.attributes['name']]
+		if o == None:
+                    kw[item.attributes['name']] = obj
+		else:
+		    o._addItem(item.attributes['name'], obj)
+		self.translate_arg(d,item.attributes['type'][1],obj,'',k,l)
+	    elif Types.bodyType in o.__class__.__bases__:
+                o._addItem("ns1:"+item.attributes['name'],convert(kw[item.attributes['name']],item.attributes['type'][1]))
+	else: 
+	    if item.attributes.has_key('name') and (not kw.has_key(item.attributes['name'])):
+	        if 'the args is required but not given,as follow:' in l:
+		    #index = l.index('the args is required but not given,as follow:')
+                    #l.insert(index+1,k+item.attributes['name'])
+		    l.append(k+item.attributes['name'])
+		else:
+		    l.append('the args is required but not given,as follow:')
+		    l.append(k+item.attributes['name'])
+		
+    def getTypes(self,name,sign=None):
         if sign is None:
-            te=self.wsdltypes.elements[name]
-            c=te.content
+            te = self.wsdltypes.elements[name]
         else:
-            te=self.wsdltypes.types[name]
-            c=te.content
-        while c.__class__ not in [tuple,list] and c is not None:
-            c=getattr(c,'content',None)
-        if c is None:
-            return False
-        if c.__class__ in [tuple,list] and len(c) == len(arg.keys()):
-            for item in c:
-	        print '=============it %s==============='%k
-                if item.attributes.has_key('name') and item.attributes.has_key('type') and arg.has_key(item.attributes['name']):
-                    #k+=item.attributes['name']+'.'
-		    if item.attributes['type'][0] ==self.namespace:
-		        k+=item.attributes['name']+'.'
-                        obj = argObj()
-                        d=arg[item.attributes['name']]
-                        if o ==None:
-                            arg[item.attributes['name']]=obj
-                        else:
-                            o._addItem(item.attributes['name'], obj)
-                        b=self.translate_arg(d,item.attributes['type'][1],obj,'',k)
-                    elif Types.bodyType in o.__class__.__bases__:
-                        o._addItem("ns1:"+item.attributes['name'],convert(arg[item.attributes['name']],item.attributes['type'][1]))
-                else :
-		    if len(l)==0:
-		        l.append('the args is required but not given,as follow:')
-		    if item.attributes.has_key('name') and (not arg.has_key(item.attributes['name'])):
-		        #k+=item.attributes['name']+'.'
-			l.append(k+item.attributes['name'])
-                    #continue
-        elif c.__class__ in [tuple,list] and len(c) > len(arg.keys()):
-	    l.append('the args given less than required,as follow:')
-	    for item in c:
-	        if item.attributes.has_key('name') and (not arg.has_key(item.attributes['name'])):
-		    #k+=item.attributes['name']+'.'
+            te = self.wsdltypes.types[name]
+        if te.attributes.has_key('type'):#java环境
+            if te.attributes['type'][0] == self.namespace:
+                te = self.getTypes(te.attributes['type'][1],'')
+        elif getattr(te,'content',None):#c#环境
+            while te.__class__ not in [tuple,list] and te is not None:
+                te=getattr(te,'content',None)
+	return te
+
+    def translate_arg(self,kw,name,o=None,sign=None,k='',l=[]):
+        te = self.getTypes(name,sign)
+	if te is None or te.__class__ not in [tuple,list]: return False
+	tel,kwl = len(te),len(kw.keys())
+	#tel = len(te)
+        #kwl = len(kw.keys())
+	attrlist = []
+        for item in te:
+	    if tel == kwl:
+	        print '   |_attr name:'.ljust(10),item.attributes['name'].ljust(10),'type:'.ljust(10),item.attributes['type'][1] 
+                self.setObj(kw,item,name,o,'',k,l)
+	    elif tel > kwl:
+		l.append('the args given less than required,as follow:')
+		if item.attributes.has_key('name') and (not kw.has_key(item.attributes['name'])):
 		    l.append(k[:-1]+item.attributes['name'])
-	elif c.__class__ in [tuple,list] and len(c) < len(arg.keys()):
-	    attrlist=[]
-	    l.append('the args given more than required,as follow:')
-	    for item in c:
+	    else:
 	        if item.attributes.has_key('name'):
-	            attrlist.append(item.attributes['name'])
-	    for (k1,v) in arg.items():
+                    attrlist.append(item.attributes['name'])
+        if len(attrlist) > 0:
+	    l.append('the args given more than required,as follow:')
+	    for (k1,v) in kw.items():
 	        if k1 not in attrlist:
-		    l.append(k+k1) 
-        if len(l)>0:
-	    b =l
-        elif b : 
-            b = arg
-        return b
-    
+		    l.append(k+k1)
+        if len(l) >0 :return l
+	else: return kw 
+                   
+   
     #把配置文件中的data转换成对应的json	
     def wrapdata(self):
         if self.data.format == 'json':
 	    import json
 	    if '\'' in self.data._text:
 	        self.data._text=self.data._text.replace('\'','\"')
-            self.data.kwargs=json.loads(self.data._text)
+	    if self.data._text.__class__ in (str,unicode) and len(self.data._text)>0:
+                self.data.kwargs=json.loads(self.data._text)
 	    #build(self.data.kwargs)
          
     # 采样的逻辑
