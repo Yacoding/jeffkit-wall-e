@@ -36,9 +36,26 @@
 		<item>(黄陂农工商公司大岭田)</item>
 	</assert>	
 	<sample
+	  id="valid3"
+	  type="SOAP"
+	  wsdl="http://192.168.0.81:9000/Hello?wsdl"
+	  method="SPInfoShow"
+	  timeout="30"
+	  >
+	  <data format="json">
+	  	<![CDATA[
+	  	{"messageType":"dd","requestParams":"dd"}
+	  	]]>
+	  </data>
+	 </sample>
+	 <assert type="eq">
+		<item>${valid3.answerMessage}</item>
+		<item>ok2</item>
+	</assert>
+	<sample
 	  id="valid2"
 	  type="SOAP"
-	  wsdl="http://192.168.0.26:123/ws.asmx?WSDL"
+	  wsdl="http://192.168.0.6:123/ws.asmx?WSDL"
 	  method="GetPwd"
 	  timeout="30"
 	  log="F"
