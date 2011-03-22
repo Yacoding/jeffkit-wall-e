@@ -33,7 +33,7 @@ def islog(obj,arg=None):
     elif arg is not None: 
         return arg
     else:
-        return False 
+        return False
 
 '''
 class TestAssertionError(Exception):
@@ -266,7 +266,7 @@ class TestCase(TestNode):
 
         result = TestResult()
         result.start_time = datetime.now()
-        result.log =islog(self)
+        result.log = islog(self)
         log.debug('there are %s children in this testcase'%len(self._children))
         for child in self._children:
             log.debug('calling child %s'%child._name)
@@ -290,19 +290,19 @@ class TestCase(TestNode):
                 break
         result.end_time = datetime.now()
         self.teardown()
-        result.nodename=self.name
+        result.nodename = self.name
 	return result
 
     #设置callback中的result
     def setResult(self,child,result,rs):
 	if child._name in [u'sample','sample']:
-	    rs.nodetype='sample'
-	    rs._sample=child
+	    rs.nodetype = 'sample'
+	    rs._sample = child
 	    rs.log = islog(child,result.log)
 	    result.sections.append(rs)
 	else:
-	    rs.nodetype='assert'
-	    rs._assert=child
+	    rs.nodetype = 'assert'
+	    rs._assert = child
 	    result.sections.append(rs)
 
     """
@@ -355,7 +355,7 @@ class Sample(TestNode):
         if sampler_cls and sampler_cls not in self.__class__.__bases__: 
 	    sampler = type(str(self.type.upper())+'Sampler',(Sample,),{})
 	    self.__class__ = sampler
-	    self.__class__.__bases__ +=(sampler_cls,)
+	    self.__class__.__bases__ += (sampler_cls,)
 
     def parse_child_tags(self,xml):
         self.apply_sampler()
@@ -412,7 +412,7 @@ class Assert(TestNode):
     """
     do assertion
     """
-    #had changed (edit 2011.2.11,add args context)
+
     def __call__(self):
         # 检测assert的类型，调用不同的assertser的方法就可以。
         log.debug('asserting ...')
@@ -424,7 +424,7 @@ class Assert(TestNode):
 	    assertser(*args)
 	except AssertionError:
 	    result.status = 'FAIL'
-            #result.exc_info=sys.exc_info()
+            #result.exc_info = sys.exc_info()
             #result.exc_info[1].message = 'the len of the assert\'s item !=2'
 	except TestAssertionError:
             # get AssertionError,说明测试失败,只能让asserter 抛出
@@ -435,34 +435,12 @@ class Assert(TestNode):
 	    result.exc_info[1].message = 'not exists key \''+result.exc_info[1].message+'\' in this assert\'s item'
 	except AttributeError:
 	    result.status = 'FAIL'
-            result.exc_info=sys.exc_info()
+            result.exc_info = sys.exc_info()
             result.exc_info[1].message = 'not exists Attribute \''+result.exc_info[1].message+'\' in this assert'
         return result
 
     #对上面进行改进，对soap也适用
     def getData(self):
-        from SOAPpy import Types
-	def split(string):
-	        arg = string.split('.')
-		for l in range(len(arg)):
-		    if '[' and ']' in arg[l-1]:
-		        index = arg[l-1][arg[l-1].index('[')+1:arg[l-1].index(']')]
-			arg[l-1] = arg[l-1][:arg[l-1].index('[')]
-                        arg.insert(1,int(index))
-		    else:continue
-		obj = None
-		for i in range(len(arg)):
-		        if i==0:
-		            if self._context.has_key(arg[i]):
-		                obj = self._context[arg[i]]
-		            elif self._parent._context.has_key(arg[i]):
-		                obj = self._parent._context[arg[i]]
-		        else:
-		            if type(obj) in [list,tuple] and type(arg[i]) in [int, long]:
-			        obj =obj[arg[i]]
-			    elif obj.__class__ is Types.structType:
-			        obj = obj.__dict__[arg[i]] 
-		return obj
         args = [item._text for item in self.item]
         if len(args) is 2:
 	    args[0] = args[0][2:-1]
@@ -471,12 +449,33 @@ class Assert(TestNode):
 	    elif self._parent._context.has_key(args[0]):
 	        args[0] = self._parent._context[args[0]]
 	    else: #处理soap断言
-	        args[0] = split(args[0])
-	    
+	        args[0] = self.search(args[0])
 	    if args[0].__class__ is not unicode:
-	        args[0] =unicode(str(args[0]),'utf-8')
-	    self.item[0]._text=args[0]
-    	    
+	        args[0] = unicode(str(args[0]),'utf-8')
+	    self.item[0]._text = args[0]
+
+    def search(self,string):
+        from SOAPpy import Types
+        arg = string.split('.')
+        for l in range(len(arg)):
+            if '[' and ']' in arg[l-1]:
+	        index = arg[l-1][arg[l-1].index('[')+1:arg[l-1].index(']')]
+	        arg[l-1] = arg[l-1][:arg[l-1].index('[')]
+                arg.insert(1,int(index))
+	    else:continue
+        obj = None
+        for i in range(len(arg)):
+            if i == 0:
+	        if self._context.has_key(arg[i]):
+	            obj = self._context[arg[i]]
+	        elif self._parent._context.has_key(arg[i]):
+	            obj = self._parent._context[arg[i]]
+	    else:
+	        if type(obj) in [list,tuple] and type(arg[i]) in [int, long]:
+		    obj = obj[arg[i]]
+	        elif obj.__class__ is Types.structType:
+		    obj = obj.__dict__[arg[i]] 
+        return obj	    
 # 注册配置结点类
 register('sample',Sample)
 register('assert',Assert)
