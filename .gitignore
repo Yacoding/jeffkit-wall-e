@@ -7,3 +7,4 @@
 /testcases/*.bak
 /testcases/*--.xml
 *.log
+/testcases/logintest--(3).xml
