@@ -156,20 +156,11 @@ class SOAPBuilder:
                 for k in self.config.argsOrdering.get(self.method):
                     self.dump(self.kw.get(k), '%s%s'%(methodns,k), typed = typed, ns_map = ns_map)                
             else:
-	        '''
-                for (k, v) in self.kw.items():
-                    self.dump(v, '%s%s'%(methodns,k), typed = typed, ns_map = ns_map)
-		'''
 		for (k, v) in self.kw.items():
                     if bodyType in  v.__class__.__bases__ :
-		        if v._ns == self.namespace:
-		            self.dump(v, k, typed = typed, ns_map = ns_map)
-		        else:
 			    v._ns = self.namespace
 			    self.dump(v, k, typed = typed, ns_map = ns_map)
-                            #self.dump(v, '%s%s'%(methodns,k), typed = typed, ns_map = ns_map)
 		    else:
-		        self.methodns =methodns
                         self.dump(v, '%s%s'%(methodns,k), typed = typed, ns_map = ns_map)
                 
         except RecursionError:
@@ -535,14 +526,7 @@ class SOAPBuilder:
         for (k, v) in obj.items():
             if k[0] != "_":
 	        self.dump(v,k,1, ns_map)
-		'''
-		if getattr(self,'methodns',None): 
-	            if k.__contains__(self.methodns):
-                        self.dump(v,k,1, ns_map)
-		    else:
-                        self.dump(v,'%s%s'%(self.methodns,k),1, ns_map)
-		else:self.dump(v,k,1, ns_map)
-		'''
+		
         self.out.append('</%s>\n' % tag)
 
     dump_dict = dump_dictionary # For Python 2.2+
