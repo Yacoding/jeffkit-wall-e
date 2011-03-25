@@ -20,6 +20,9 @@ class Monitor:
         
 	if result_handler and getattr(result_handler,'handle',None):
             self.result_handler = result_handler
+	else:
+	    from resultHandler import xmlHandler
+	    self.result_handler = xmlHandler()
 	testdir = self.config.testdir
         # scan test file
         self.testcases = {} # 管理测试用例
@@ -51,19 +54,7 @@ class Monitor:
         for file in os.listdir(testdir):
             if file.endswith('test.xml'):
                 yield os.path.sep.join((testdir,file))
-   #采样结果输出目录
-    def get_testResult_dir(self):
-        rsdir = self.config.testResult_dir
-        if not os.path.exists(rsdir):
-            rsdir = os.path.sep.join((os.getcwd(),rsdir))
-	    if not os.path.exists(rsdir):
-	        try:
-	            os.makedirs(rsdir)
-	        except:
-	            rsdir = os.path.sep.join((os.getcwd(),'result'))
-		    os.makedirs(rsdir)
-        return os.path.abspath(rsdir)
-
+  
       
     """
     从XML生成TestCase的内容，xml参数可能是文本，也可能是一个文件
@@ -109,30 +100,11 @@ class Monitor:
                 self.result_handler.handle(result)
             except:
                 log.debug('fail to handle result by a custom handler,we will handle the result in default way.')
-                self.result2xml(result)
+                #self.result2xml(result)
         else:
             log.debug('handle result in the default way,save as xml file')
             self.result2xml(result)
-    #输出结果到xml文件
-    def result2xml(self,result):
-        log.debug('save test result to xml %s'%result)
-	rsdir = self.get_testResult_dir()
-	from result2xml import build
-	xml_builder = build(result)
-	#xml_doc = create_xmldoc(result)
-        xml_doc = xml_builder.get_xml_doc()
-	filename = str(result.end_time).replace(' ','_').replace(':','_')
-	filename = filename+'.xml'
-	filename = result.nodename+'_'+filename
-        filename = os.path.sep.join((rsdir,filename))
-	print '=========================='
-	print 'filename:   ',filename
-	f = file(filename,'w')
-	import codecs
-	writer = codecs.lookup('utf-8')[3](f)
-        xml_doc.writexml(writer,'','    ','\n', encoding='utf-8')
-        writer.close()
-	
+    
 
     def run(self):
         log.debug('about to run all test!')
