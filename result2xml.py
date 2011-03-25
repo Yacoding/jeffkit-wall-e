@@ -1,7 +1,10 @@
 import traceback
 from xml.dom import minidom
-xml_doc = minidom.Document()
-def xml_head(result):
+#xml_doc = minidom.Document()
+def create_xml_doc():
+    return  minidom.Document()
+
+def xml_head(result,xml_doc):
     testResult = xml_doc.createElement("testResult")
     testResult.setAttribute("name",result.nodename)
     testResult.setAttribute("status",result.status)
@@ -13,7 +16,7 @@ def xml_head(result):
 
 def xml_body(result,headnode):pass
 
-def xml_sample(result,headnode):
+def xml_sample(result,headnode,xml_doc):
     child = xml_doc.createElement(result.nodetype)
     child.setAttribute('id',result._sample.id)
     if getattr(result._sample,'url',None):
@@ -27,7 +30,7 @@ def xml_sample(result,headnode):
     headnode.appendChild(child)
     return child
    
-def xml_assert(result,headnode):
+def xml_assert(result,headnode,xml_doc):
     child = xml_doc.createElement(result.nodetype)
     child.setAttribute('status',result.status)
     if result._assert.__dict__.has_key('type'):
@@ -42,7 +45,7 @@ def xml_assert(result,headnode):
     headnode.appendChild(child)
     return child
 
-def xml_soapsample_detail(rs,headnode):
+def xml_soapsample_detail(rs,headnode,xml_doc):
     if getattr(rs,'soapRespone',None):
         from SOAPpy import Types
 	child_rs_soap = xml_doc.createElement('soap_Result')
@@ -76,7 +79,7 @@ def xml_soapsample_detail(rs,headnode):
             child_rs_soap.appendChild(child_rs_soap_text)
 	headnode.appendChild(child_rs_soap)
 
-def xml_httpsample_detail(rs,headnode):
+def xml_httpsample_detail(rs,headnode,xml_doc):
     if rs.__dict__.has_key('httpHeader'):
         child_rs_httpheader = xml_doc.createElement('httpHeader')
         for item in rs.httpHeader:
@@ -126,7 +129,7 @@ def xml_httpsample_detail(rs,headnode):
         child_rs_resText.appendChild(child_rs_resText_text)
         headnode.appendChild(child_rs_resText) 
 
-def xml_except(result,headnode):
+def xml_except(result,headnode,xml_doc):
     rs_except = xml_doc.createElement('exception')
     rs_except_text1 = xml_doc.createTextNode('ERROR: %s'%str(result.exc_info[0]).replace('<','').replace('>',''))
     rs_except.appendChild(rs_except_text1)
@@ -141,26 +144,31 @@ def xml_except(result,headnode):
 
 class build:
     def __init__(self,result): 
-        self.weave(result)
+        try:
+           self.weave(result)
+	except:
+	   print 'error!!!!!!!!!!!'
 	
     def weave(self,result):
-        headnode = xml_head(result)
+        xml_doc = create_xml_doc()
+        headnode = xml_head(result,xml_doc)
 	for rs in result.sections:
 	    if rs.nodetype in [u'sample','sample']:
-	         child = xml_sample(rs,headnode)
+	         child = xml_sample(rs,headnode,xml_doc)
 		 if getattr(rs,'log',None):
 		     print '-------result----------'
 		     print rs.log
                      if getattr(rs,'_sample',None) and rs._sample.type.lower() == 'soap':
-		         xml_soapsample_detail(rs,child)
+		         xml_soapsample_detail(rs,child,xml_doc)
 		     elif getattr(rs,'_sample',None) and rs._sample.type.lower() == 'http':
-		         xml_httpsample_detail(rs,child)
+		         xml_httpsample_detail(rs,child,xml_doc)
 	         if rs.status in ['ERROR','FAIL']:
-		         xml_except(rs,child)
+		         xml_except(rs,child,xml_doc)
             else:
-	         xml_assert(rs,headnode)
+	         xml_assert(rs,headnode,xml_doc)
 	if result.__dict__.has_key('exc_info'):
-	    xml_except(result,headnode)
+	    xml_except(result,headnode,xml_doc)
+	setattr(self,'xml_doc',xml_doc)
     
     def get_xml_doc(self):
-        return xml_doc
+        return self.xml_doc
