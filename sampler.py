@@ -152,8 +152,6 @@ class SOAPSampler(object):
 	else: 
 	    if item.attributes.has_key('name') and (not kw.has_key(item.attributes['name'])):
 	        if 'the args is required but not given,as follow:' in l:
-		    #index = l.index('the args is required but not given,as follow:')
-                    #l.insert(index+1,k+item.attributes['name'])
 		    l.append(k+item.attributes['name'])
 		else:
 		    l.append('the args is required but not given,as follow:')
@@ -176,8 +174,6 @@ class SOAPSampler(object):
         te = self.getTypes(name,sign)
 	if te is None or te.__class__ not in [tuple,list]: return False
 	tel,kwl = len(te),len(kw.keys())
-	#tel = len(te)
-        #kwl = len(kw.keys())
 	attrlist = []
         for item in te:
 	    if tel == kwl:
@@ -221,7 +217,7 @@ class SOAPSampler(object):
         from testcase import TestResult
 	result = TestResult(self._name)
 	server.soapproxy.config.dumpSOAPOut = 1
-	server.soapproxy.config.dumpSOAPIn = 1
+	server.soapproxy.config.dumpSOAPIn = 0
 	try:
 	    self.wrapdata()
 	    if self.data.kwargs:
@@ -243,8 +239,11 @@ class SOAPSampler(object):
         except:
 	    result.status='ERROR'
 	    result.exc_info = log_exce('something wrong')
+        
+	if getattr(server.soapproxy,'soapmessage',None) and getattr(server.soapproxy,'soaprespone',None):
+	    result.outcoming = getattr(server.soapproxy,'soapmessage')
+            result.incoming = getattr(server.soapproxy,'soaprespone')
 	
-	print 'result\'s status',result.status
 	return result
 	   
     def getDataField(self,arg):
