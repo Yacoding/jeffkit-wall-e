@@ -93,17 +93,16 @@ class Monitor:
             log.warn('no test node in the xml!')
     #结果处理
     def handle_result(self,result):
-        log.debug('handling test result')
-        if getattr(self,'result_handler',None):
-            log.debug('delegate result to somebody')
-            try:
-                self.result_handler.handle(result)
-            except:
-                log.debug('fail to handle result by a custom handler,we will handle the result in default way.')
-                #self.result2xml(result)
-        else:
-            log.debug('handle result in the default way,save as xml file')
-            self.result2xml(result)
+        try:
+            self.result_handler.handle(result)
+        except:
+            log.debug('fail to handle result by a custom handler,we will handle the result in default way.')
+	    
+	    import traceback
+	    for filename, lineno, function, msg in traceback.extract_tb(sys.exc_info()[2]):
+	        print '%s line %s in %s function [%s]'%(filename,lineno,function,msg)
+	    
+
     
 
     def run(self):
