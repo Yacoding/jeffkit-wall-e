@@ -9,7 +9,7 @@ class xmlHandler(resultHander):
         self.config = config
     
     def handle(self,result):
-        self.result2xml(result)
+        self.result_xml(result)
 
     def get_testResult_dir(self):
         rsdir = self.config.testResult_dir
@@ -23,19 +23,16 @@ class xmlHandler(resultHander):
 		    os.makedirs(rsdir)
         return os.path.abspath(rsdir)
 
-    def result2xml(self,result):
+    def result_xml(self,result):
         log.debug('save test result to xml ')
 	rsdir = self.get_testResult_dir()
 	from result2xml import build
 	xml_builder = build(result)
-	#xml_doc = create_xmldoc(result)
         xml_doc = xml_builder.get_xml_doc()
 	filename = str(result.end_time).replace(' ','_').replace(':','_')
 	filename = filename+'.xml'
 	filename = result.nodename+'_'+filename
         filename = os.path.sep.join((rsdir,filename))
-	print '=========================='
-	print 'filename:   ',filename
 	f = file(filename,'w')
 	import codecs
 	writer = codecs.lookup('utf-8')[3](f)
