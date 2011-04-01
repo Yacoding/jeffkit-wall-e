@@ -475,7 +475,8 @@ class Assert(TestNode):
 		    obj = obj[arg[i]]
 	        elif obj.__class__ is Types.structType:
 		    obj = obj.__dict__[arg[i]] 
-        return obj	    
+        return obj
+	
 # 注册配置结点类
 register('sample',Sample)
 register('assert',Assert)
