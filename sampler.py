@@ -122,6 +122,8 @@ class HTTPSampler(object):
             result.responseText = self._parent._context[self.id+'.responseText'] = self._context['responseText'] = response.read()
             result.responseHeaders = self._parent._context[self.id+'.responseHeaders'] = self._context['responseHeaders'] = response.info()
         except:
+	    result.end_time = datetime.now()
+	    result._sample = self
             result.status = "ERROR"
 	    result.code = 503
             result.exc_info = log_exce('something wrong')
@@ -138,7 +140,7 @@ class SOAPSampler(object):
     #校验并构造soap所需要的参数
     def setObj(self,kw,item,name,o=None,sign=None,k='',l=[]):
 	if item.attributes.has_key('name') and item.attributes.has_key('type') and kw.has_key(item.attributes['name']):
-	    if item.attributes['type'][0] == self.namespace: 
+	    if item.attributes['type'][0] == self._namespace: 
                 k += item.attributes['name']+'.'
                 obj = argObj()
                 d = kw[item.attributes['name']]
@@ -159,11 +161,11 @@ class SOAPSampler(object):
 		
     def getTypes(self,name,sign=None):
         if sign is None:
-            te = self.wsdltypes.elements[name]
+            te = self._wsdltypes.elements[name]
         else:
-            te = self.wsdltypes.types[name]
+            te = self._wsdltypes.types[name]
         if te.attributes.has_key('type'):#java环境
-            if te.attributes['type'][0] == self.namespace:
+            if te.attributes['type'][0] == self._namespace:
                 te = self.getTypes(te.attributes['type'][1],'')
         elif getattr(te,'content',None):#c#环境
             while te.__class__ not in [tuple,list] and te is not None:
@@ -207,19 +209,24 @@ class SOAPSampler(object):
          
     # 采样的逻辑
     def sample(self):
-        server = WSDL.Proxy(self.wsdl)
-        self.namespace = namespace = server.wsdl.targetNamespace
-	#设置argObj._validURI值
-	argObj._validURIs = (namespace, ) 
-	server.methods[self.method].namespace = namespace
-        method = getattr(server,self.method)
-	self.wsdltypes = server.wsdl.types[namespace]
+
         from testcase import TestResult
 	result = TestResult(self._name)
-	server.soapproxy.config.dumpSOAPOut = 1
-	server.soapproxy.config.dumpSOAPIn = 0
+	
 	try:
 	    self.wrapdata()
+
+	    server = WSDL.Proxy(self.wsdl)
+            self._namespace = namespace = server.wsdl.targetNamespace
+            #设置argObj._validURI值
+	    argObj._validURIs = (namespace, )
+            server.methods[self.method].namespace = namespace
+            method = getattr(server,self.method)
+            self._wsdltypes = server.wsdl.types[namespace]
+            server.soapproxy.config.dumpSOAPOut = 1
+            server.soapproxy.config.dumpSOAPIn = 0
+
+            result.start_time = datetime.now()
 	    if self.data.kwargs:
                 kwargs = self.translate_arg(self.data.kwargs,self.method)
 		if kwargs.__class__ is dict:
@@ -233,17 +240,20 @@ class SOAPSampler(object):
 		    raise argsException,error_root+'\n\t\t\t'+errormsg
             else:
                 soap_result = method()
+	    result.end_time = datetime.now()
 	    rs=self.getDataField(soap_result)
             result.soapRespone=self._parent._context[self.id] = self._context[self.id] = rs
 	    result.code =200
-        except:
+
+            if getattr(server.soapproxy,'soapmessage',None) and getattr(server.soapproxy,'soaprespone',None):
+                result.outcoming = getattr(server.soapproxy,'soapmessage')
+                result.incoming = getattr(server.soapproxy,'soaprespone')
+	except:
+	    result.end_time = datetime.now()
+	    result._sample = self
 	    result.status='ERROR'
 	    result.exc_info = log_exce('something wrong')
         
-	if getattr(server.soapproxy,'soapmessage',None) and getattr(server.soapproxy,'soaprespone',None):
-	    result.outcoming = getattr(server.soapproxy,'soapmessage')
-            result.incoming = getattr(server.soapproxy,'soaprespone')
-	
 	return result
 	   
     def getDataField(self,arg):
