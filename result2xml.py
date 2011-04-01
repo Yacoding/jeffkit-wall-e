@@ -12,7 +12,7 @@ def xml_head(result,xml_doc):
     testResult.setAttribute("status",result.status)
     testResult.setAttribute("start_time",str(result.start_time))
     testResult.setAttribute("end_time",str(result.end_time))
-    testResult.setAttribute("time_use",str(result.end_time-result.start_time))
+    testResult.setAttribute("time_used",str(result.end_time-result.start_time))
     xml_doc.appendChild(testResult)
     return testResult
 
@@ -29,6 +29,9 @@ def xml_sample(result,headnode,xml_doc):
     if getattr(result,'code',None):
         child.setAttribute('code',str(result.code))
     child.setAttribute('status',result.status)
+    child.setAttribute('start_time',str(result.start_time))
+    child.setAttribute('end_time',str(result.end_time))
+    child.setAttribute('time_used',str(result.end_time-result.start_time))
     headnode.appendChild(child)
     return child
    
@@ -68,9 +71,6 @@ class build:
     def getdumper(self,name):
         from dumper import get_dumper,getRegdumpers
         dumpers = getRegdumpers()
-	print dumpers
-	print dumpers.has_key(name)
-	print name
         if dumpers.has_key(name):
             dum = get_dumper(name)
 	else:
