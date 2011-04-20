@@ -26,15 +26,20 @@ class Monitor:
 	testdir = self.config.testdir
         # scan test file
         self.testcases = {} # 管理测试用例
+	#self.testCasesFile = {}#文件与testcase对应
 
         for testfile in self.get_test_files():
         # 构造测试并添加，视情况看是否需要启用新定时器
             testcase = TestCase()
+	    file_name = os.path.sep.join((os.getcwd(),testfile))
             try:
                 xml = self.parsexml(testfile)
                 testcase.fromxml(xml)
                 if testcase.is_valid():
                     self.testcases[testcase.name] = testcase
+		    self.file2testcase[file_name] = testcase.name
+		    #后来添加
+		    #self.testCasesFile[testfile] = testcase.name
                 else:
                     raise Exception,'no testcase found of empty testcase'
             except:
