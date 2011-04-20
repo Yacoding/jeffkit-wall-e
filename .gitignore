@@ -1,6 +1,7 @@
 *.gitignore
 *.bak
 *.pyc
+/testcases/*
 /testcases/backup
 /testcases/qq_result
 /testcases/result
