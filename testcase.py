@@ -441,18 +441,21 @@ class Assert(TestNode):
 
     #对上面进行改进，对soap也适用
     def getData(self):
-        args = [item._text for item in self.item]
-        if len(args) is 2:
-	    args[0] = args[0][2:-1]
-	    if self._context.has_key(args[0]):
-	        args[0] = self._context[args[0]]
-	    elif self._parent._context.has_key(args[0]):
-	        args[0] = self._parent._context[args[0]]
+        
+	if len(self.item) != 2: return
+	for item in self.item:
+	    if '${' and '}' not in item._text :continue
+            _text = item._text[2:-1]
+	    if self._context.has_key(_text):
+	        _text = self._context[_text]
+	    elif self._parent._context.has_key(_text):
+	        _text = self._parent._context[_text]
 	    else: #处理soap断言
-	        args[0] = self.search(args[0])
-	    if args[0].__class__ is not unicode:
-	        args[0] = unicode(str(args[0]),'utf-8')
-	    self.item[0]._text = args[0]
+	        _text = self.search(_text)
+	    if _text.__class__ is not unicode:
+	        _text = unicode(str(_text),'utf-8')
+	    item._text = _text
+
 
     def search(self,string):
         from SOAPpy import Types
